@@ -1,0 +1,72 @@
+# DevForge API — Render blueprint (standalone backend repo).
+# SQLite data lives on a persistent disk at /data.
+# The static client deploys separately to Netlify (its repo keeps netlify.toml).
+#
+# After creating the service, note the actual Render URL (usually
+# https://devforge-api.onrender.com, with a suffix appended if that name is
+# taken). If it differs, update API_URL / *_REDIRECT_URI here and in Render,
+# VITE_API_URL on the Netlify client build, and the authorized redirect URIs
+# in the Google/GitHub developer consoles.
+services:
+  - type: web
+    name: devforge-api
+    runtime: node
+    plan: free
+    region: oregon
+    rootDir: .
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      - key: DATABASE_URL
+        value: file:/data/devforge.db
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: COOKIE_SAME_SITE
+        value: none
+      - key: DEMO_MODE
+        value: "false"
+      # The deployed Netlify client origin (CORS + post-OAuth redirect target).
+      - key: CLIENT_ORIGIN
+        value: https://devforge-df.netlify.app
+      - key: API_URL
+        value: https://devforge-api.onrender.com
+      # Google OAuth: set the client id/secret; register the redirect URI below
+      # in the Google Cloud console as an authorized redirect URI.
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        value: https://devforge-api.onrender.com/api/auth/google/callback
+      - key: GOOGLE_APP_ORIGIN
+        value: https://devforge-df.netlify.app
+      # GitHub OAuth: set the client id/secret; register the redirect URI below
+      # as the GitHub OAuth app's callback URL.
+      - key: GITHUB_CLIENT_ID
+        sync: false
+      - key: GITHUB_CLIENT_SECRET
+        sync: false
+      - key: GITHUB_REDIRECT_URI
+        value: https://devforge-api.onrender.com/api/github/callback
+      - key: GITHUB_APP_ORIGIN
+        value: https://devforge-df.netlify.app
+      # AI: leave AI_PROVIDER empty to use the built-in demo engine, or set
+      # AI_PROVIDER=openai-aicompat with OPENAI_API_KEY / OPENAI_BASE_URL / OPENAI_MODEL.
+      - key: AI_PROVIDER
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+    # NODE_ENV=production makes npm skip devDependencies, which the build (tsc)
+    # and seed (tsx) need — so install dev deps explicitly.
+    buildCommand: npm install --include=dev && npm run build
+    # Seed the (initially empty) SQLite DB so demo@devforge.dev / devforge123 works.
+    preDeployCommand: npm exec prisma db push && npm exec prisma db seed
+    startCommand: npm start
+    disk:
+      name: devforge-data
+      mountPath: /data
+      sizeGB: 1

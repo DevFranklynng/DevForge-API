@@ -1,0 +1,220 @@
+// DevForge database schema
+//
+// Default provider is SQLite so the app runs with zero external setup.
+// To use PostgreSQL: change `provider = "sqlite"` to `provider = "postgresql"`
+// and set DATABASE_URL to your connection string. Statuses/priorities are kept
+// as validated strings (not database enums) so the schema is portable and
+// values can be extended without migrations.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String         @id @default(cuid())
+  name         String
+  email        String         @unique
+  password     String
+  googleId     String?        @unique
+  avatarUrl    String?
+  role         String         @default("owner")
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  settings     UserSettings?
+  projects     Project[]
+  tasks        Task[]
+  repositories Repository[]
+  deployments  Deployment[]
+  apiEndpoints ApiEndpoint[]
+  activities   Activity[]
+  notifications Notification[]
+  sessions     Session[]
+  github       GithubCredential?
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  userAgent String?
+  ip        String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model GithubCredential {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  githubId    String
+  githubLogin String
+  avatarUrl   String?
+  token       String   // encrypted at rest (AES-256-GCM), never exposed to the client
+  scopes      String   @default("public_repo")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model UserSettings {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  theme              String   @default("dark")
+  workspaceName      String   @default("My Workspace")
+  defaultProjectView String   @default("board")
+  notifyDueSoon      Boolean  @default(true)
+  notifyFailing      Boolean  @default(true)
+  updatedAt          DateTime @updatedAt
+}
+
+model Project {
+  id             String        @id @default(cuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name           String
+  description    String?
+  status         String        @default("planning")
+  priority       String        @default("medium")
+  progress       Int           @default(0)
+  techStack      String        @default("[]")
+  repositoryUrl  String?
+  productionUrl  String?
+  imageUrl       String?
+  dueDate        DateTime?
+  lastActivityAt DateTime      @default(now())
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  tasks          Task[]
+  repositories   Repository[]
+  deployments    Deployment[]
+  apiEndpoints   ApiEndpoint[]
+  activities     Activity[]
+  notifications  Notification[]
+
+  @@index([userId])
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId   String?
+  project     Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  status      String    @default("todo")
+  priority    String    @default("medium")
+  dueDate     DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId, projectId])
+}
+
+model Repository {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId   String?
+  project     Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  name        String
+  owner       String    @default("")
+  description String?
+  branch      String    @default("main")
+  visibility  String    @default("private")
+  stars       Int       @default(0)
+  forks       Int       @default(0)
+  openIssues  Int       @default(0)
+  lastCommit  DateTime?
+  url         String?
+  source      String    @default("manual")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId, projectId])
+}
+
+model Deployment {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId   String?
+  project     Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  environment String    @default("production")
+  status      String    @default("success")
+  buildStatus String?
+  url         String?
+  branch      String    @default("main")
+  commit      String?
+  commitMessage String?
+  provider    String    @default("demo")
+  durationMs  Int?
+  finishedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId, projectId])
+}
+
+model ApiEndpoint {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId       String?
+  project         Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  name            String?
+  method          String   @default("GET")
+  path            String
+  description     String?
+  authRequired    Boolean  @default(false)
+  parameters      String   @default("[]")
+  requestBody     String?
+  responseExample String?
+  statusCode      String   @default("200")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId, projectId])
+}
+
+model Activity {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type         String
+  description  String
+  projectId    String?
+  project      Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  resourceType String?
+  resourceId   String?
+  details      String?
+  createdAt    DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  type      String
+  title     String
+  message   String?
+  link      String?
+  resourceId String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRead])
+}

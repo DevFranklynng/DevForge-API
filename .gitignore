@@ -1,0 +1,42 @@
+node_modules/
+dist/
+build/
+coverage/
+
+# Environment files - never commit secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Database - local SQLite files
+prisma/*.db
+prisma/*.db-journal
+prisma/*.db-shm
+prisma/*.db-wal
+*.sqlite
+*.sqlite3
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+
+# Build artifacts
+*.tsbuildinfo
+
+# Prisma / generated
+src/generated/
+
+# Test output
+tests/.cache/
