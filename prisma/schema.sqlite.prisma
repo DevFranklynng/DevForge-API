@@ -1,22 +1,22 @@
-// DevForge database schema
+// DevForge database schema — LOCAL-ONLY SQLite variant.
 //
-// Uses PostgreSQL — required for serverless hosts (Vercel) where the
-// filesystem is read-only and ephemeral, so local SQLite cannot persist.
-// Point DATABASE_URL at any Postgres-compatible host (Neon, Supabase,
-// Vercel Postgres, local, ...). Statuses/priorities are kept as validated
-// strings (not database enums) so the schema is portable and values can be
-// extended without migrations.
+// Identical to prisma/schema.prisma except the datasource provider, for
+// running the API with zero external setup (a local prisma/devforge.db file,
+// plus DATABASE_URL=file:./devforge.db in .env). Do NOT deploy this schema to
+// serverless hosts (Vercel) — their filesystem is read-only and ephemeral, so
+// SQLite cannot persist. Use prisma/schema.prisma (PostgreSQL) for deploys.
 //
-// For fully-local zero-setup development without a database server, the
-// identical prisma/schema.sqlite.prisma (provider "sqlite") can be used by
-// passing `--schema prisma/schema.sqlite.prisma` to the prisma CLI.
+// Usage:
+//   npm run db:generate:sqlite
+//   npm run db:push:sqlite
+//   npm run db:seed:sqlite
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 

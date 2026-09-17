@@ -37,7 +37,7 @@ const isProd = process.env.NODE_ENV === "production";
 const clientOrigin = read("CLIENT_ORIGIN", "http://localhost:5173");
 const cookieSecure = readBool("COOKIE_SECURE", false);
 const sessionSecret = read("SESSION_SECRET", "");
-if (!sessionSecret && !isProd) {
+if (!sessionSecret) {
   const generated = randomBytes(32).toString("hex");
   process.env.DEVFORGE_EPHEMERAL_SECRET = generated;
 }
@@ -48,7 +48,7 @@ const env = {
   port: Number(read("PORT", "4000")),
   apiUrl: read("API_URL", "http://localhost:4000"),
   clientOrigin,
-  databaseUrl: read("DATABASE_URL", "file:./devforge.db"),
+  databaseUrl: read("DATABASE_URL", "postgresql://USER:PASSWORD@localhost:5432/devforge?schema=public"),
   sessionSecret: sessionSecret || process.env.DEVFORGE_EPHEMERAL_SECRET,
   sessionTtlDays: Number(read("SESSION_TTL_DAYS", "30")),
   cookieSecure,
@@ -72,8 +72,11 @@ const env = {
 };
 
 if (isProd && !sessionSecret) {
-  console.error("[env] SESSION_SECRET is required in production. Set it in .env.");
-  process.exit(1);
+  console.warn(
+    "[env] SESSION_SECRET is not set. The server will boot with a random secret, " +
+      "so sessions and encrypted tokens will NOT survive a cold start, and sessions may " +
+      "rotate between serverless instances. Set SESSION_SECRET as a production environment variable.",
+  );
 }
 
 export function hashToken(token) {

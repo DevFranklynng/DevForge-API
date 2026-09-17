@@ -1,4 +1,5 @@
 import path from "node:path";
+import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import express from "express";
 import cors from "cors";
@@ -52,13 +53,15 @@ export function createApp() {
 
   if (env.isProd) {
     const clientDist = path.resolve(__dirname, "../../dist");
-    app.use(express.static(clientDist));
-    app.get("*", (req, res, next) => {
-      if (req.path.startsWith("/api")) return next();
-      res.sendFile(path.join(clientDist, "index.html"), (err) => {
-        if (err) next();
+    if (existsSync(clientDist)) {
+      app.use(express.static(clientDist));
+      app.get("*", (req, res, next) => {
+        if (req.path.startsWith("/api")) return next();
+        res.sendFile(path.join(clientDist, "index.html"), (err) => {
+          if (err) next();
+        });
       });
-    });
+    }
   }
 
   app.use(notFoundHandler);
