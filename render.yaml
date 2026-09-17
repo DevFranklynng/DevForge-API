@@ -60,9 +60,9 @@ services:
         sync: false
       - key: OPENAI_API_KEY
         sync: false
-    # NODE_ENV=production makes npm skip devDependencies, which the build (tsc)
-    # and seed (tsx) need — so install dev deps explicitly.
-    buildCommand: npm install --include=dev && npm run build
+    # NODE_ENV=production makes npm skip devDependencies, which prisma CLI and
+    # the seed need — so install dev deps explicitly. No compile step: plain JS.
+    buildCommand: npm install --include=dev
     # Seed the (initially empty) SQLite DB so demo@devforge.dev / devforge123 works.
     preDeployCommand: npm exec prisma db push && npm exec prisma db seed
     startCommand: npm start
