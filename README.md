@@ -79,6 +79,10 @@ docker run -p 4000:4000 -v devforge-data:/data -e DATABASE_URL=file:/data/devfor
 
 Note: the Dockerfile targets the SQLite schema (`prisma/schema.sqlite.prisma`) — swap the provider locally or provide a `DATABASE_URL` for Postgres.
 
+## API reference
+
+Full endpoint documentation (+ frontend integration guide): **[`docs/API.md`](docs/API.md)**.
+
 ## Testing
 
 Start the API (`npm run dev` or the built server) then run:
